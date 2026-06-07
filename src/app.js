@@ -1,5 +1,6 @@
 const inquirerImport = require("inquirer");
 const inquirer = inquirerImport.default ?? inquirerImport;
+
 const prompt =
   typeof inquirer.prompt === "function"
     ? inquirer.prompt.bind(inquirer)
@@ -26,13 +27,18 @@ const {
 
 async function main() {
   try {
-    const seedDomain = process.argv[2];
+    const seedDomain =
+      process.argv[2] ||
+      process.env.SEED_DOMAIN;
 
     if (!seedDomain) {
-      console.log("Usage: npm start company.com");
+      console.log(
+        "Usage: npm start company.com or set SEED_DOMAIN"
+      );
       process.exit(1);
     }
 
+    console.log(`Seed Domain: ${seedDomain}`);
     console.log("Finding lookalike companies...");
 
     const domains =
@@ -52,33 +58,46 @@ async function main() {
     const contacts =
       await enrichEmails(people);
 
-    console.log("\nSummary\n");
+    console.log("\n========== SUMMARY ==========\n");
 
     contacts.forEach((contact, i) => {
       console.log(
-        `${i + 1}. ${contact.person.name}`
+        `${i + 1}. ${contact.person?.name || "Unknown"}`
       );
 
-      console.log(contact.person.email);
+      console.log(
+        contact.person?.email || "No email"
+      );
 
-      console.log("------------");
+      console.log("---------------------------");
     });
 
-    if (!prompt) {
-      throw new Error("Unable to initialize inquirer prompt module.");
-    }
+    const autoSend =
+      process.env.AUTO_SEND === "true";
 
-    const answer = await prompt([
-      {
-        type: "confirm",
-        name: "send",
-        message: "Send emails?"
+    if (autoSend) {
+      console.log(
+        "\nAUTO_SEND enabled. Sending emails...\n"
+      );
+    } else {
+      if (!prompt) {
+        throw new Error(
+          "Unable to initialize inquirer prompt module."
+        );
       }
-    ]);
 
-    if (!answer.send) {
-      console.log("Cancelled.");
-      return;
+      const answer = await prompt([
+        {
+          type: "confirm",
+          name: "send",
+          message: "Send emails?"
+        }
+      ]);
+
+      if (!answer.send) {
+        console.log("Cancelled.");
+        return;
+      }
     }
 
     for (const contact of contacts) {
@@ -86,25 +105,27 @@ async function main() {
         await sendEmail(contact);
 
         console.log(
-          `Sent to ${contact.person.email}`
+          `Sent to ${contact.person?.email}`
         );
       } catch (err) {
         console.log(
-          `Failed: ${contact.person.email}`
+          `Failed: ${contact.person?.email}`
         );
 
         console.log(err.message);
       }
     }
 
-    console.log("Completed.");
+    console.log("\nCompleted.");
   } catch (error) {
-    console.error(
-      "Application Error:"
-    );
+    console.error("Application Error:");
 
-    console.error(error.response?.data || error);
+    console.error(
+      error.response?.data ||
+      error.message ||
+      error
+    );
   }
 }
 
-main(); 
+main();
