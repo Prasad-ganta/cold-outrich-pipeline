@@ -127,5 +127,7 @@ async function main() {
     );
   }
 }
+console.log("ARGV:", process.argv);
+console.log("SEED_DOMAIN:", process.env.SEED_DOMAIN);
 console.log("SEED_DOMAIN:", process.env.SEED_DOMAIN);
 main();
