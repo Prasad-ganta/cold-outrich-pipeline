@@ -127,5 +127,5 @@ async function main() {
     );
   }
 }
-
+console.log("SEED_DOMAIN:", process.env.SEED_DOMAIN);
 main();
